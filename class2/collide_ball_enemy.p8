@@ -1,12 +1,14 @@
 pico-8 cartridge // http://www.pico-8.com
 version 43
 __lua__
--- vmc - class1
+-- vmc - class2
 -- wall and actor collisions
 -- by zep
 
 actor = {} -- all actors
+
 finished = false
+gameover = false
 
 -- make an actor
 -- and add to global collection
@@ -45,6 +47,7 @@ function _init()
 	-- make player
 	pl = make_actor(21,2,2)
 	pl.frames=4
+	pl.hp = 5
 	
 	-- bouncy ball
 	local ball = make_actor(33,8.5,11)
@@ -56,21 +59,38 @@ function _init()
 	-- red ball: bounce forever
 	-- (because no friction and
 	-- max bounce)
-	local ball = make_actor(49,7,8)
-	ball.dx=-0.1
-	ball.dy=0.15
-	ball.friction=0
-	ball.bounce=1
+	red_ball = make_actor(49,7,8)
+	red_ball.dx=-0.1
+	red_ball.dy=0.15
+	red_ball.friction=0
+	red_ball.bounce=1
 	
 	-- treasure
-	
+	collected = 0
+	total_tre = 0
+	-- room1
 	for i=0,16 do
 		a = make_actor(35,8+cos(i/16)*3,
 		    10+sin(i/16)*3)
 		a.w=0.25 a.h=0.25
+	 total_tre+=1
 	end
-	-- count collected
-	collected = 0
+	-- room2
+	for i=0,16 do
+		a = make_actor(35,
+		    24+cos(i/16)*4,
+		    8+sin(i/16)*4)
+		a.w=0.25 a.h=0.25
+	 total_tre+=1
+	end
+ -- room3
+	for i=0,16 do
+		a = make_actor(35,
+		    24+cos(i/16)*4,
+		    24+sin(i/16)*4)
+		a.w=0.25 a.h=0.25
+	 total_tre+=1
+	end	
 	
 	-- blue peopleoids
 	
@@ -127,6 +147,8 @@ end
 -- end up with the velocity of
 -- the fastest moving actor)
 
+-- also handle player hurt
+
 function solid_actor(a, dx, dy)
 	for a2 in all(actor) do
 		if a2 != a then
@@ -158,6 +180,14 @@ function solid_actor(a, dx, dy)
 					local ca=
 					 collide_event(a,a2) or
 					 collide_event(a2,a)
+					
+					-- if not a treasure
+					-- check if the player got hurt 
+					if not ca then
+					 if (a==pl) player_hurt(a2)
+					 if (a2==pl) player_hurt(a)
+					end
+
 					return not ca
 				end
 				
@@ -172,6 +202,14 @@ function solid_actor(a, dx, dy)
 					local ca=
 					 collide_event(a,a2) or
 					 collide_event(a2,a)
+
+					-- if not a treasure
+					-- check if the player got hurt 
+					if not ca then
+					 if (a==pl) player_hurt(a2)
+					 if (a2==pl) player_hurt(a)
+					end
+
 					return not ca
 				end
 				
@@ -201,15 +239,33 @@ function collide_event(a1,a2)
 	
 	-- player collects treasure
 	if (a1==pl and a2.k==35) then
+		collected+=1
 		del(actor,a2)
 		sfx(3)
-		collected += 1
 		return true
-	end
+	end	
 	
 	sfx(2) -- generic bump sound
 	
 	return false
+end
+
+-- return true if [a]
+-- is a red ball.
+-- the player hp is reduced by 1
+-- and gameover is set to true
+-- if hp reaches zero
+
+function player_hurt(a)
+ if a.k==49 then
+  pl.hp -=1
+  sfx(4)
+  if pl.hp <= 0 then
+   gameover = true
+  end
+  return true
+ end
+ return false
 end
 
 function move_actor(a)
@@ -257,15 +313,14 @@ function control_player(pl)
 	if (btn(1)) pl.dx += accel 
 	if (btn(2)) pl.dy -= accel 
 	if (btn(3)) pl.dy += accel 
-	
 end
 
 function _update()  
- if finished then
+ if finished or gameover then
   return
  end
  
- if collected == 17 then
+ if collected == total_tre then
   sfx(0)
   finished = true
  else
@@ -280,6 +335,12 @@ function draw_actor(a)
 	spr(a.k + a.frame, sx, sy)
 end
 
+function draw_banner(txt,x,y,tc,bc)
+ rectfill(x,y,x+127,y+20,bc)
+ local tx = 64 - #txt*2
+ print(txt,x+tx,y+5,tc)
+end
+
 function _draw()
 	cls()
 	
@@ -291,11 +352,18 @@ function _draw()
 	foreach(actor,draw_actor)
 
  -- finished game
- if collected == 17	then
-  rectfill(0,20,127,40,11)
-  print("finished!",50,25,1)
+ if gameover then
+  draw_banner("gameover",
+    room_x*128,room_y*128+20,8,15)
+  return
+ end
+ if collected == total_tre	then
+  draw_banner("finished!",
+    room_x*128,room_y*128+20,1,11)
  end
 end
+
+
 
 __gfx__
 000000003bbbbbb7d66666660d6536600000000000ccc70000ccc70000ccc70000ccc70000000000000000000000000000000000000000000000000000000000
@@ -501,3 +569,4 @@ __sfx__
 000100000c55012540075100050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500005000050000500
 000100003073020750217201171000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700007000070000700
 000400002a3602e350313300030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300003000030000300
+000200000f4300e43030600336502a63025620236201e6101a6101760000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600006000060000600
