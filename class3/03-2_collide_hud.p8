@@ -1,8 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 43
 __lua__
--- vmc - class3 - interactions
--- bubble effect or introduce red dude
+-- vmc - class3 - feedback
+-- UI feedback for player interactions
 
 actor = {} -- all actors
 
@@ -120,11 +120,6 @@ function _init()
 	 a.dx=1/8
 	 a.friction=0.1
 	end
-	
-	-- red dude
-	a = make_actor(17,27,3)
-	a.friction=0.7
-	
 
 end
 
@@ -176,8 +171,6 @@ end
 -- (cheat version: both actors
 -- end up with the velocity of
 -- the fastest moving actor)
-
--- also handle player hurt
 
 function solid_actor(a, dx, dy)
 	for a2 in all(actor) do
@@ -253,21 +246,15 @@ function collide_event(a1,a2)
 	
 	-- player collide events
 	if a1==pl then
-		if collectable(a2) then -- treasure
+		if collectable(a2) then
 			collected+=1
 			del(actor,a2)
 			sfx(3)
 			return true
 		end
-		if enemy(a2) then -- red ball
+		if enemy(a2) then
 			damage_player()
 			return false
-		end
-
-		if fget(a2.k,3) then -- npc
-			npc_text  = "hello!"
-			npc_banner=true
-			return true
 		end
 	end
 	
@@ -287,6 +274,19 @@ function damage_player()
  sh_f+=1
  if pl.hp <= 0 then
   gameover = true
+ end
+end
+
+function enemy_patrol(e) 
+ local dist_x = (e.x - pl.x) 
+ local dist_y = (e.y - pl.y)
+ local dist = sqrt(dist_x*dist_x + dist_y*dist_y)
+ if dist < 5 then
+	accel = 0.01
+	if (dist_x < 0) e.dx += accel
+	if (dist_x > 0) e.dx -= accel
+	if (dist_y < 0) e.dy += accel
+	if (dist_y > 0) e.dy -= accel
  end
 end
 
@@ -341,19 +341,6 @@ function control_player(pl)
 	if (btn(3)) pl.dy += accel 
 end
 
-function enemy_patrol(e) 
- local dist_x = (e.x - pl.x) 
- local dist_y = (e.y - pl.y)
- local dist = sqrt(dist_x*dist_x + dist_y*dist_y)
- if dist < 5 then
-	accel = 0.03
-	if (dist_x < 0) e.dx += accel
-	if (dist_x > 0) e.dx -= accel
-	if (dist_y < 0) e.dy += accel
-	if (dist_y > 0) e.dy -= accel
- end
-end
-
 function _update()  
  if finished or gameover then
   return
@@ -368,7 +355,13 @@ function _update()
  	-- updates the screen shake
  	shake()
  end
- 
+
+end
+
+function draw_hud(x,y) 
+	rectfill(x,y,x+36,y+6,6)
+ print("hp:"..pl.hp,x+1,y+1,3)
+ print("c:"..collected,x+20,y+1,9)
 end
 
 function draw_actor(a)
@@ -377,20 +370,11 @@ function draw_actor(a)
 	spr(a.k + a.frame, sx, sy)
 end
 
+
 function draw_banner(txt,x,y,tc,bc)
  rectfill(x,y,x+127,y+20,bc)
  local tx = 64 - #txt*2
  print(txt,x+tx,y+5,tc)
-end
-
-function draw_npc_banner()
-	if npc_banner then
-		local npc_x, npc_y = 27*8+4, 2*8+4
-		rrectfill(npc_x-#npc_text*4, npc_y-10, #npc_text*4+8, 10, 5, 7)
-		local tx = npc_x - #npc_text*4 + 4
-		print(npc_text,tx,npc_y-8,1)
-	end
-	npc_banner=false
 end
 
 function _draw()
@@ -403,7 +387,7 @@ function _draw()
 	
 	map()
 	foreach(actor,draw_actor)
-
+ 
  -- finished game
  if gameover then
   draw_banner("gameover",
@@ -415,9 +399,7 @@ function _draw()
     room_x*128,room_y*128+20,1,11)
  end
 
- if npc_banner then
-  draw_npc_banner()
- end
+ draw_hud(room_x*128,room_y*128)
 
 end
 
