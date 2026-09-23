@@ -2,8 +2,7 @@ pico-8 cartridge // http://www.pico-8.com
 version 43
 __lua__
 -- vmc - class2
--- wall and actor collisions
--- by zep
+-- ball damages player
 
 actor = {} -- all actors
 
@@ -59,11 +58,11 @@ function _init()
 	-- red ball: bounce forever
 	-- (because no friction and
 	-- max bounce)
-	red_ball = make_actor(49,7,8)
-	red_ball.dx=-0.1
-	red_ball.dy=0.15
-	red_ball.friction=0
-	red_ball.bounce=1
+	local ball = make_actor(49,7,8)
+	ball.dx=-0.1
+	ball.dy=0.15
+	ball.friction=0
+	ball.bounce=1
 	
 	-- treasure
 	collected = 0
@@ -147,8 +146,6 @@ end
 -- end up with the velocity of
 -- the fastest moving actor)
 
--- also handle player hurt
-
 function solid_actor(a, dx, dy)
 	for a2 in all(actor) do
 		if a2 != a then
@@ -230,27 +227,18 @@ function collide_event(a1,a2)
 			return true
 		end
 		if a2.k == 49 then -- red ball
-			damage_player()
+			pl.hp -=1
+  		sfx(4)
+  		if pl.hp <= 0 then
+   			gameover = true
+  		end
 			return false
 		end
 	end
 	
 	sfx(2) -- generic bump sound
+
 	return false
-end
-
--- return true if [a]
--- is a red ball.
--- the player hp is reduced by 1
--- and gameover is set to true
--- if hp reaches zero
-
-function damage_player()
-  pl.hp -=1
-  sfx(4)
-  if pl.hp <= 0 then
-   gameover = true
-  end
 end
 
 function move_actor(a)
@@ -298,6 +286,7 @@ function control_player(pl)
 	if (btn(1)) pl.dx += accel 
 	if (btn(2)) pl.dy -= accel 
 	if (btn(3)) pl.dy += accel 
+
 end
 
 function _update()  

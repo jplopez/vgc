@@ -8,22 +8,7 @@ actor = {} -- all actors
 
 finished = false
 gameover = false
--- scree shake
-sh_f=0
-sh_x=0
-sh_y=0
 
-function shake()
- local m=2
-	sh_x=0
-	sh_y=0
-	if sh_f > 0 then
-		sh_x=(m-rnd(m*2))*sh_f
-		sh_y=(m-rnd(m*2))*sh_f
-		sh_f*=0.95
-		if (sh_f < 0.1) sh_f = 0
-	end
-end
 
 -- make an actor
 -- and add to global collection
@@ -74,11 +59,11 @@ function _init()
 	-- red ball: bounce forever
 	-- (because no friction and
 	-- max bounce)
-	red_ball = make_actor(49,7,8)
-	red_ball.dx=-0.1
-	red_ball.dy=0.15
-	red_ball.friction=0
-	red_ball.bounce=1
+	local ball = make_actor(49,7,8)
+	ball.dx=-0.1
+	ball.dy=0.15
+	ball.friction=0
+	ball.bounce=1
 	
 	-- treasure
 	collected = 0
@@ -174,8 +159,6 @@ end
 -- end up with the velocity of
 -- the fastest moving actor)
 
--- also handle player hurt
-
 function solid_actor(a, dx, dy)
 	for a2 in all(actor) do
 		if a2 != a then
@@ -250,13 +233,13 @@ function collide_event(a1,a2)
 	
 	-- player collide events
 	if a1==pl then
-		if collectable(a2) then -- treasure
+		if collectable(a2) then
 			collected+=1
 			del(actor,a2)
 			sfx(3)
 			return true
 		end
-		if enemy(a2) then -- red ball
+		if enemy(a2) then
 			damage_player()
 			return false
 		end
@@ -275,7 +258,6 @@ end
 function damage_player()
  pl.hp -=1
  sfx(4)
- sh_f+=1
  if pl.hp <= 0 then
   gameover = true
  end
@@ -326,6 +308,7 @@ function control_player(pl)
 	if (btn(1)) pl.dx += accel 
 	if (btn(2)) pl.dy -= accel 
 	if (btn(3)) pl.dy += accel 
+
 end
 
 function _update()  
@@ -339,8 +322,6 @@ function _update()
  else
  	control_player(pl)
   foreach(actor, move_actor)
- 	-- updates the screen shake
- 	shake()
  end
  
 end
@@ -362,8 +343,7 @@ function _draw()
 	
 	room_x=flr(pl.x/16) 
 	room_y=flr(pl.y/16)
-	camera(room_x*128 + sh_x, 
-	       room_y*128 + sh_y)
+	camera(room_x*128, room_y*128)
 	
 	map()
 	foreach(actor,draw_actor)
