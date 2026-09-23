@@ -1,8 +1,8 @@
 pico-8 cartridge // http://www.pico-8.com
 version 43
 __lua__
--- vmc - class2 - interactions
--- sprite flags, enemies (ball and blue guy)
+-- vmc - class1-2: interactions + feedback
+-- blue guy is enemy and chases you
 
 actor = {} -- all actors
 
@@ -127,12 +127,10 @@ end
 function solid(x, y)
 	-- grab the cel value
 	val=mget(x, y)
-	
 	-- check if flag 1 is set (the
 	-- orange toggle button in the 
 	-- sprite editor)
 	return fget(val, 1)
-	
 end
 
 -- solid_area
@@ -214,7 +212,6 @@ function solid_actor(a, dx, dy)
 	return false
 end
 
-
 -- checks both walls and actors
 function solid_a(a, dx, dy)
 	if solid_area(a.x+dx,a.y+dy,
@@ -263,7 +260,24 @@ function damage_player()
  end
 end
 
+function enemy_patrol(e) 
+ local dist_x = (e.x - pl.x) 
+ local dist_y = (e.y - pl.y)
+ local dist = sqrt(dist_x*dist_x + dist_y*dist_y)
+ if dist < 5 then
+	accel = 0.01
+	if (dist_x < 0) e.dx += accel
+	if (dist_x > 0) e.dx -= accel
+	if (dist_y < 0) e.dy += accel
+	if (dist_y > 0) e.dy -= accel
+ end
+end
+
 function move_actor(a)
+
+	if enemy(a) then
+		enemy_patrol(a)
+	end
 
 	-- only move actor along x
 	-- if the resulting position
@@ -307,8 +321,7 @@ function control_player(pl)
 	if (btn(0)) pl.dx -= accel 
 	if (btn(1)) pl.dx += accel 
 	if (btn(2)) pl.dy -= accel 
-	if (btn(3)) pl.dy += accel 
-
+	if (btn(3)) pl.dy += accel
 end
 
 function _update()  

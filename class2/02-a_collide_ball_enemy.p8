@@ -1,7 +1,7 @@
 pico-8 cartridge // http://www.pico-8.com
 version 43
 __lua__
--- vmc - class2
+-- vmc - class2: interactions or intentional design
 -- ball damages player
 
 actor = {} -- all actors
